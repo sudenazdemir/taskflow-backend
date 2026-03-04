@@ -28,31 +28,30 @@ func Connect(dbURL string) {
 }
 
 func CreateTables() {
-	// users, projects ve tasks tablolarını oluşturuyoruz
 	query := `
-	CREATE TABLE IF NOT EXISTS users (
-		id SERIAL PRIMARY KEY,
-		username TEXT UNIQUE NOT NULL,
-		email TEXT UNIQUE NOT NULL,
-		password TEXT NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 
-	CREATE TABLE IF NOT EXISTS projects (
-		id SERIAL PRIMARY KEY,
-		name TEXT NOT NULL,
-		description TEXT,
-		owner_id INTEGER REFERENCES users(id),
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
+    CREATE TABLE IF NOT EXISTS projects (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- Sahibi silinirse proje kalsın ama owner boş görünsün
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 
-	CREATE TABLE IF NOT EXISTS tasks (
+    CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT, 
         status TEXT DEFAULT 'pending',
-        project_id INTEGER REFERENCES projects(id),
-        assigned_to INTEGER REFERENCES users(id),
+        project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE, -- Proje silinirse görevler de gitsin (Önemli!)
+        assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL, -- Atanan kişi silinirse görev kalsın
         due_date TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
     );`
@@ -62,5 +61,5 @@ func CreateTables() {
 		log.Fatalf("Tablolar oluşturulurken hata: %v", err)
 	}
 
-	log.Println("📁 Database tables are ready!")
+	log.Println("📁 Database tables are ready with Cascading Rules!")
 }

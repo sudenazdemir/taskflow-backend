@@ -53,7 +53,7 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	query := `INSERT INTO tasks (title, description, status, project_id, assigned_to) 
               VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`
 
-	err := database.DB.QueryRow(query, task.Title, task.Description, "todo", task.ProjectID, task.AssignedTo).
+	err := database.DB.QueryRow(query, task.Title, task.Description, "pending", task.ProjectID, task.AssignedTo).
 		Scan(&task.ID, &task.CreatedAt)
 	if err != nil {
 		log.Printf("Veritabanı kayıt hatası: %v", err)
