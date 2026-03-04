@@ -8,6 +8,7 @@ import (
 	"github.com/sudenazdemir/taskflow-backend/internal/config"
 	"github.com/sudenazdemir/taskflow-backend/internal/database"
 	"github.com/sudenazdemir/taskflow-backend/internal/handlers"
+	"github.com/sudenazdemir/taskflow-backend/internal/middleware"
 )
 
 func main() {
@@ -19,7 +20,7 @@ func main() {
 	// Rotalar (Routes)
 	http.HandleFunc("/user", handlers.GetUserHandler)
 
-	http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/tasks/", middleware.LoggingMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			handlers.CreateTaskHandler(w, r)
@@ -30,9 +31,10 @@ func main() {
 		case http.MethodDelete:
 			handlers.DeleteTaskHandler(w, r)
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			// Burada da JSON hata dönmek istersen az önce yazdığımız sendJSONError mantığını kullanabilirsin
+			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
-	})
+	}))
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Status: OK"))
 	})
