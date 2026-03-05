@@ -19,6 +19,8 @@ func main() {
 
 	// Rotalar (Routes)
 	http.HandleFunc("/user", handlers.GetUserHandler)
+	http.HandleFunc("/register", middleware.LoggingMiddleware(handlers.RegisterHandler))
+	http.HandleFunc("/login", middleware.LoggingMiddleware(handlers.LoginHandler))
 
 	http.HandleFunc("/tasks/", middleware.LoggingMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
