@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/joho/godotenv"
 	"github.com/sudenazdemir/taskflow-backend/internal/config"
 	"github.com/sudenazdemir/taskflow-backend/internal/database"
 	"github.com/sudenazdemir/taskflow-backend/internal/handlers"
@@ -12,6 +13,9 @@ import (
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println(".env dosyası bulunamadı, sistem değişkenleri kullanılacak")
+	}
 	cfg := config.LoadConfig()
 
 	database.Connect(cfg.DBURL)
@@ -22,7 +26,7 @@ func main() {
 	http.HandleFunc("/register", middleware.LoggingMiddleware(handlers.RegisterHandler))
 	http.HandleFunc("/login", middleware.LoggingMiddleware(handlers.LoginHandler))
 	http.HandleFunc("/projects", middleware.LoggingMiddleware(handlers.CreateProjectHandler))
-	http.HandleFunc("/projects/stats/", handlers.GetProjectStatsHandler)
+	http.HandleFunc("/projects/stats/", middleware.AuthMiddleware(handlers.GetProjectStatsHandler))
 	http.HandleFunc("/tasks/", middleware.LoggingMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:

@@ -34,13 +34,24 @@ func CreateProjectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetProjectStatsHandler(w http.ResponseWriter, r *http.Request) {
-	// URL'den ID alıyoruz (getIDFromURL fonksiyonunu kullanıyoruz)
-	projectID, err := getIDFromURL(r)
-	if err != nil || projectID == 0 {
-		sendJSONError(w, "Geçersiz Proje ID", http.StatusBadRequest)
+	// 1. Context'ten giriş yapan kullanıcının ID'sini al
+	loggedInUserID := r.Context().Value("user_id").(int)
+
+	// 2. URL'den Proje ID'sini al
+	projectID, _ := getIDFromURL(r)
+
+	// 3. Kontrol Et: Bu proje bu kullanıcıya mı ait?
+	var ownerID int
+	err := database.DB.QueryRow("SELECT owner_id FROM projects WHERE id = $1", projectID).Scan(&ownerID)
+	if err != nil {
+		sendJSONError(w, "Proje bulunamadı", http.StatusNotFound)
 		return
 	}
 
+	if ownerID != loggedInUserID {
+		sendJSONError(w, "Bu projenin verilerini görmeye yetkiniz yok!", http.StatusForbidden)
+		return
+	}
 	var total, completed, pending int
 
 	// Tek sorgu, dev hizmet: Toplam, Tamamlanan ve Bekleyen sayılarını alıyoruz

@@ -3,7 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/sudenazdemir/taskflow-backend/internal/database"
 	"github.com/sudenazdemir/taskflow-backend/internal/models"
 	"golang.org/x/crypto/bcrypt"
@@ -77,10 +80,30 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Başarılı yanıt (Şimdilik Token yok, sadece başarı mesajı)
+	// .env dosyasından anahtarı çekiyoruz
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "default_fallback_secret" // Güvenlik için boş bırakmamak lazım
+	}
+	jwtKey := []byte(jwtSecret)
+
+	// Token oluşturma
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"exp":     expirationTime.Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		sendJSONError(w, "Token oluşturulamadı", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "Giriş başarılı! Hoş geldin " + user.Username,
-		"user":    user,
+		"message": "Giriş başarılı!",
+		"token":   tokenString,
 	})
 }
