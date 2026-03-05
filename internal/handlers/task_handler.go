@@ -20,20 +20,18 @@ func sendJSONError(w http.ResponseWriter, message string, code int) {
 }
 
 func getIDFromURL(r *http.Request) (int, error) {
-	// URL Path: /tasks/3
-	// TrimPrefix ile başındaki /tasks/ kısmını atıyoruz, geriye sadece "3" kalıyor
-	path := strings.TrimPrefix(r.URL.Path, "/tasks/")
+	// URL'yi parçalara ayır (Örn: /projects/stats/2 -> ["", "projects", "stats", "2"])
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 
-	// Eğer sonda hala "/" varsa onu da temizle (Örn: /tasks/3/)
-	path = strings.Trim(path, "/")
-
-	if path == "" {
+	if len(parts) < 1 {
 		return 0, nil
 	}
 
-	id, err := strconv.Atoi(path)
+	// URL'nin en sonundaki parçayı ID olarak al
+	lastPart := parts[len(parts)-1]
+
+	id, err := strconv.Atoi(lastPart)
 	if err != nil {
-		log.Printf("ID Dönüştürme Hatası: Path '%s' sayıya çevrilemedi", path)
 		return 0, err
 	}
 	return id, nil

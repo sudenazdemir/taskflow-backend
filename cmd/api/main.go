@@ -22,6 +22,7 @@ func main() {
 	http.HandleFunc("/register", middleware.LoggingMiddleware(handlers.RegisterHandler))
 	http.HandleFunc("/login", middleware.LoggingMiddleware(handlers.LoginHandler))
 	http.HandleFunc("/projects", middleware.LoggingMiddleware(handlers.CreateProjectHandler))
+	http.HandleFunc("/projects/stats/", handlers.GetProjectStatsHandler)
 	http.HandleFunc("/tasks/", middleware.LoggingMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
