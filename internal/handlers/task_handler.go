@@ -193,3 +193,47 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 		"id":      id,
 	})
 }
+
+func GetTaskWithCommentsHandler(w http.ResponseWriter, r *http.Request) {
+	taskID, _ := getIDFromURL(r)
+
+	// 1. Görev detaylarını al
+	var task models.Task
+	queryTask := `SELECT id, title, description, status, project_id FROM tasks WHERE id = $1`
+	err := database.DB.QueryRow(queryTask, taskID).Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.ProjectID)
+	if err != nil {
+		sendJSONError(w, "Görev bulunamadı", http.StatusNotFound)
+		return
+	}
+
+	// 2. Bu göreve ait yorumları al (Username ile birlikte)
+	queryComments := `
+        SELECT c.id, c.content, c.created_at, u.username 
+        FROM comments c
+        JOIN users u ON c.user_id = u.id
+        WHERE c.task_id = $1
+        ORDER BY c.created_at DESC`
+
+	rows, err := database.DB.Query(queryComments, taskID)
+	if err != nil {
+		sendJSONError(w, "Yorumlar getirilemedi", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var comments []models.Comment
+	for rows.Next() {
+		var c models.Comment
+		if err := rows.Scan(&c.ID, &c.Content, &c.CreatedAt, &c.Username); err != nil {
+			continue
+		}
+		comments = append(comments, c)
+	}
+
+	// 3. Sonucu birleştir ve gönder
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"task":     task,
+		"comments": comments,
+	})
+}

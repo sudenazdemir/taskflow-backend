@@ -44,6 +44,7 @@ func main() {
 	}))
 	// comments/add gibi bir path seçebiliriz
 	http.HandleFunc("/comments/add", middleware.AuthMiddleware(handlers.AddCommentHandler))
+	http.HandleFunc("/tasks/details/", middleware.AuthMiddleware(handlers.GetTaskWithCommentsHandler))
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Status: OK"))
