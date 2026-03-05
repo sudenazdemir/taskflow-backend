@@ -42,6 +42,9 @@ func main() {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
 	}))
+	// comments/add gibi bir path seçebiliriz
+	http.HandleFunc("/comments/add", middleware.AuthMiddleware(handlers.AddCommentHandler))
+
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Status: OK"))
 	})

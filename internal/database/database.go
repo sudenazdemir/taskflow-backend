@@ -54,7 +54,15 @@ func CreateTables() {
         assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL, -- Atanan kişi silinirse görev kalsın
         due_date TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
-    );`
+    );
+    
+    CREATE TABLE IF NOT EXISTS comments (
+    id SERIAL PRIMARY KEY,
+    task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
 
 	_, err := DB.Exec(query)
 	if err != nil {
