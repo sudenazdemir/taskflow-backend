@@ -6,6 +6,7 @@ type Project struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
+	OwnerID     int       `json:"owner_id"` // Bu satırı ekle!
 	CreatedAt   time.Time `json:"created_at"`
 }
 

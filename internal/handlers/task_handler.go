@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -50,10 +51,16 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := `INSERT INTO tasks (title, description, status, project_id, assigned_to) 
-              VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`
+	query := `INSERT INTO tasks (title, description, status, project_id, assigned_to, priority, due_date) 
+          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at`
 
-	err := database.DB.QueryRow(query, task.Title, task.Description, "pending", task.ProjectID, task.AssignedTo).
+	// Scan kısmında da t.Status'u modelden alalım (Boş gelirse DB default'u kullanır)
+	status := task.Status
+	if status == "" {
+		status = "pending"
+	}
+
+	err := database.DB.QueryRow(query, task.Title, task.Description, status, task.ProjectID, task.AssignedTo, task.Priority, task.DueDate).
 		Scan(&task.ID, &task.CreatedAt)
 	if err != nil {
 		log.Printf("Veritabanı kayıt hatası: %v", err)
@@ -70,23 +77,47 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		sendJSONError(w, "Sadece GET metodu destekleniyor", http.StatusMethodNotAllowed)
-		return
+	// URL'den project_id parametresini oku (Örn: /tasks?project_id=2)
+	projectIDStr := r.URL.Query().Get("project_id")
+
+	var rows *sql.Rows
+	var err error
+
+	if projectIDStr != "" {
+		// Filtreli Sorgu
+		projectID, _ := strconv.Atoi(projectIDStr)
+		query := `SELECT id, project_id, assigned_to, title, description, status, priority, due_date, created_at 
+                  FROM tasks WHERE project_id = $1`
+		rows, err = database.DB.Query(query, projectID)
+	} else {
+		// Tümünü Getir (Eski halimiz)
+		query := `SELECT id, project_id, assigned_to, title, description, status, priority, due_date, created_at FROM tasks`
+		rows, err = database.DB.Query(query)
 	}
 
-	rows, err := database.DB.Query("SELECT id, title, description, status, project_id, assigned_to, created_at FROM tasks")
 	if err != nil {
-		sendJSONError(w, "Görevler listelenirken bir hata oluştu", http.StatusInternalServerError)
+		sendJSONError(w, "Sorgu hatası", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var tasks []models.Task = []models.Task{} // Boşsa null değil [] dönsün diye
+	var tasks []models.Task = []models.Task{}
 
 	for rows.Next() {
 		var t models.Task
-		if err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.ProjectID, &t.AssignedTo, &t.CreatedAt); err != nil {
+		// 2. BURAYI GÜNCELLE: Scan sırası SELECT sırasıyla birebir aynı olmalı!
+		err := rows.Scan(
+			&t.ID,
+			&t.ProjectID,
+			&t.AssignedTo,
+			&t.Title,
+			&t.Description,
+			&t.Status,
+			&t.Priority,
+			&t.DueDate,
+			&t.CreatedAt,
+		)
+		if err != nil {
 			log.Printf("Satır okuma hatası: %v", err)
 			continue
 		}
@@ -118,10 +149,10 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	task.ID = id
 
 	// 3. Veritabanında güncelleme yap
-	query := `UPDATE tasks SET title=$1, description=$2, status=$3 
-              WHERE id=$4 RETURNING project_id, assigned_to, created_at`
+	query := `UPDATE tasks SET title=$1, description=$2, status=$3, priority=$4, due_date=$5 
+          WHERE id=$6 RETURNING project_id, assigned_to, created_at`
 
-	err = database.DB.QueryRow(query, task.Title, task.Description, task.Status, task.ID).
+	err = database.DB.QueryRow(query, task.Title, task.Description, task.Status, task.Priority, task.DueDate, task.ID).
 		Scan(&task.ProjectID, &task.AssignedTo, &task.CreatedAt)
 	if err != nil {
 		log.Printf("Güncelleme hatası: %v", err)
