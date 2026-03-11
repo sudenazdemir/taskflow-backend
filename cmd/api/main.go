@@ -1,59 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/sudenazdemir/taskflow-backend/internal/config"
 	"github.com/sudenazdemir/taskflow-backend/internal/database"
-	"github.com/sudenazdemir/taskflow-backend/internal/handlers"
-	"github.com/sudenazdemir/taskflow-backend/internal/middleware"
+	"github.com/sudenazdemir/taskflow-backend/internal/router"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println(".env dosyası bulunamadı, sistem değişkenleri kullanılacak")
+	// 1. Env yükle
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(".env dosyası yüklenirken hata oluştu! Dosyanın doğru yerde olduğundan emin ol.")
 	}
-	cfg := config.LoadConfig()
-
-	database.Connect(cfg.DBURL)
+	// 2. Veritabanı bağlantısı
+	dbURL := os.Getenv("DATABASE_URL")
+	database.Connect(dbURL)
 	database.CreateTables()
 
-	// Rotalar (Routes)
-	http.HandleFunc("/user", handlers.GetUserHandler)
-	http.HandleFunc("/register", middleware.LoggingMiddleware(handlers.RegisterHandler))
-	http.HandleFunc("/login", middleware.LoggingMiddleware(handlers.LoginHandler))
-	http.HandleFunc("/projects", middleware.LoggingMiddleware(handlers.CreateProjectHandler))
-	http.HandleFunc("/projects/stats/", middleware.AuthMiddleware(handlers.GetProjectStatsHandler))
-	http.HandleFunc("/tasks/", middleware.LoggingMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			handlers.CreateTaskHandler(w, r)
-		case http.MethodGet:
-			handlers.GetTasksHandler(w, r)
-		case http.MethodPut:
-			handlers.UpdateTaskHandler(w, r)
-		case http.MethodDelete:
-			handlers.DeleteTaskHandler(w, r)
-		default:
-			// Burada da JSON hata dönmek istersen az önce yazdığımız sendJSONError mantığını kullanabilirsin
-			w.WriteHeader(http.StatusMethodNotAllowed)
-		}
-	}))
-	// comments/add gibi bir path seçebiliriz
-	http.HandleFunc("/comments/add", middleware.AuthMiddleware(handlers.AddCommentHandler))
-	http.HandleFunc("/tasks/details/", middleware.AuthMiddleware(handlers.GetTaskWithCommentsHandler))
+	// 3. Router kurulumu
+	routes := router.SetupRoutes()
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Status: OK"))
-	})
-
-	port := ":" + cfg.Port
-	fmt.Println("🚀 TaskFlow Backend starting on http://localhost" + port)
-
-	if err := http.ListenAndServe(port, nil); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	// 4. Server başlat
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
+
+	log.Printf("🚀 TaskFlow sunucusu %s portunda başladı...", port)
+	log.Fatal(http.ListenAndServe(":"+port, routes))
 }
