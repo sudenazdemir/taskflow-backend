@@ -18,15 +18,16 @@ Bu projede, **Separation of Concerns** (Sorumlulukların Ayrıştırılması) pr
 
 ```text
 ├── cmd/
-│   └── main.go              # Uygulama giriş noktası
+│   └── main.go              # Uygulamanın başlatıldığı ana dosya
 ├── internal/
-│   ├── handlers/            # HTTP isteklerini (Request/Response) yöneten katman
-│   ├── middleware/          # JWT Yetkilendirme ve CORS kontrolleri
-│   ├── models/              # Veritabanı şemaları ve veri modelleri (Structs)
-│   └── database/            # PostgreSQL bağlantı ve konfigürasyonu
-├── uploads/                 # Kullanıcılar tarafından yüklenen fiziksel dosyalar
-├── .env                     # Çevresel değişkenler (Gizli bilgiler)
-└── go.mod                   # Bağımlılık yönetimi
+│   ├── handlers/            # HTTP Request/Response mantığının yönetildiği katman
+│   ├── middleware/          # JWT Auth, Logging ve CORS güvenlik katmanları
+│   ├── models/              # Veritabanı tablolarının Go karşılığı olan yapılar (Structs)
+│   ├── database/            # PostgreSQL bağlantı havuzu yönetimi
+│   ├── config/              # .env ve çevresel değişkenlerin yüklendiği konfigürasyon katmanı
+│   └── router/              # Uygulamanın tüm API uç noktalarının (Routes) tanımlandığı yer
+├── uploads/                 # Sistem üzerinden yüklenen fiziksel dökümanlar
+├── .env                     # Hassas veritabanı ve JWT anahtarı bilgileri
 ```
 ## 🚀 Kurulum
 1. `go mod download`
