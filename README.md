@@ -28,6 +28,7 @@ Bu projede, **Separation of Concerns** (Sorumlulukların Ayrıştırılması) pr
 │   └── router/              # Uygulamanın tüm API uç noktalarının (Routes) tanımlandığı yer
 ├── uploads/                 # Sistem üzerinden yüklenen fiziksel dökümanlar
 ├── .env                     # Hassas veritabanı ve JWT anahtarı bilgileri
+└── go.mod                   # Proje bağımlılıkları ve kütüphane yönetimi
 ```
 ## 🚀 Kurulum
 1. `go mod download`
